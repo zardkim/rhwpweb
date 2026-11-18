@@ -1,0 +1,17 @@
+{{template "head" .}}
+<div class="wrap narrow">
+  <div class="card">
+    <h1>{{.Title}}</h1>
+    <p class="sub">HWP 문서 편집기 · 로그인이 필요합니다</p>
+    {{template "flash" .}}
+    <form method="post" action="{{.Prefix}}/login" autocomplete="on">
+      <input type="hidden" name="rd" value="{{.RD}}">
+      <label for="u">사용자 이름</label>
+      <input id="u" type="text" name="username" value="{{.Name}}" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus>
+      <label for="p">비밀번호</label>
+      <input id="p" type="password" name="password" autocomplete="current-password" required>
+      <button class="primary full" type="submit">로그인</button>
+    </form>
+  </div>
+</div>
+{{template "foot" .}}

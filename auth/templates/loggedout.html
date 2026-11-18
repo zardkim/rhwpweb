@@ -1,0 +1,32 @@
+{{template "head" .}}
+<div class="wrap narrow">
+  <div class="card">
+    <h1>로그아웃되었습니다</h1>
+    <p class="sub" id="st">브라우저에 저장된 앱 캐시를 정리하는 중…</p>
+    <a class="btn primary full" style="text-align:center" href="{{.Prefix}}/login">다시 로그인</a>
+  </div>
+</div>
+<script>
+// RHWP 는 서비스 워커로 앱을 캐시한다. 로그아웃 후에도 캐시된 앱이 열리지 않도록
+// /rhwp/ 서비스 워커와 Cache Storage 만 지운다. (IndexedDB·localStorage 의 사용자 설정·문서는 건드리지 않음)
+(async function () {
+  var st = document.getElementById('st');
+  try {
+    if ('serviceWorker' in navigator) {
+      var regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.filter(function (r) { return r.scope.indexOf('{{.AppPath}}') >= 0; })
+                            .map(function (r) { return r.unregister(); }));
+    }
+    if (window.caches) {
+      var keys = await caches.keys();
+      await Promise.all(keys.filter(function (k) {
+        return k.indexOf('{{.AppPath}}') >= 0 || k === 'wasm-cache' || k.indexOf('workbox') === 0;
+      }).map(function (k) { return caches.delete(k); }));
+    }
+    st.textContent = '이 브라우저의 로그인 정보와 앱 캐시를 지웠습니다.';
+  } catch (e) {
+    st.textContent = '로그인 정보를 지웠습니다.';
+  }
+})();
+</script>
+{{template "foot" .}}

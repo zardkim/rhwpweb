@@ -1,0 +1,85 @@
+{{template "head" .}}
+<div class="wrap">
+  {{template "nav" .}}
+  <div class="card">
+    <h1>사용자 관리</h1>
+    <p class="sub">사용자 {{len .Users}}명</p>
+    {{template "flash" .}}
+
+    <h2 style="margin-top:0">저장 위치 점검</h2>
+    <p class="hint">서버에 저장한 문서·사용자 DB 가 실제로 어디에 있는지 보여준다. 경로는 NAS 디스크 안 경로다
+      (예: <code>/volume1/docker/rhwp/files</code> 는 보통 <code>/docker/rhwp/files</code> 로 보인다).
+      정확한 호스트 경로: <code>docker inspect rhwp-auth</code></p>
+    <div class="scroll">
+    <table>
+      <thead><tr><th>항목</th><th>컨테이너</th><th>NAS 쪽 경로</th><th>상태</th></tr></thead>
+      <tbody>
+      {{range .Storage}}
+      <tr>
+        <td>{{.Label}}</td>
+        <td><code>{{.Target}}</code></td>
+        <td>{{if .Mounted}}<code>{{.Where}}</code>{{if .RO}} <span class="tag">읽기 전용</span>{{end}}{{else}}-{{end}}</td>
+        <td>{{if .Warn}}<span class="tag off">확인 필요</span> {{.Warn}}{{else}}<span class="tag">정상</span>{{end}}</td>
+      </tr>
+      {{end}}
+      </tbody>
+    </table>
+    </div>
+    <p class="hint">rhwp-auth {{.Version}}</p>
+
+    <h2>사용자 추가</h2>
+    <form method="post" action="{{.Prefix}}/admin" class="row" autocomplete="off">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <input type="hidden" name="op" value="create">
+      <div><label for="nn">사용자 이름</label><input id="nn" type="text" name="name" pattern="[A-Za-z0-9._\-]{2,32}" title="영문·숫자·._- 2~32자" autocapitalize="none" spellcheck="false" required></div>
+      <div><label for="np">비밀번호 (비우면 자동 생성)</label><input id="np" type="password" name="password" autocomplete="new-password" minlength="8"></div>
+      <label class="check"><input type="checkbox" name="admin"> 관리자</label>
+      <div style="flex:0"><button class="primary" type="submit">추가</button></div>
+    </form>
+
+    <h2>사용자 목록</h2>
+    <div class="scroll">
+    <table>
+      <thead><tr><th>이름</th><th>상태</th><th>최근 로그인</th><th>작업</th></tr></thead>
+      <tbody>
+      {{$csrf := .CSRF}}{{$p := .Prefix}}{{$me := .User.Name}}
+      {{range .Users}}
+      <tr>
+        <td><strong>{{.Name}}</strong>{{if eq .Name $me}} <span class="hint">(나)</span>{{end}}</td>
+        <td>
+          {{if .Admin}}<span class="tag admin">관리자</span>{{end}}
+          {{if .Disabled}}<span class="tag off">비활성</span>{{else}}<span class="tag">활성</span>{{end}}
+        </td>
+        <td>{{fmtTime .LastLogin}}</td>
+        <td>
+          <div class="actions">
+            <details>
+              <summary>비밀번호 재설정</summary>
+              <form method="post" action="{{$p}}/admin" style="margin-top:6px;display:flex;gap:4px">
+                <input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="op" value="reset"><input type="hidden" name="name" value="{{.Name}}">
+                <input type="password" name="password" placeholder="비우면 자동 생성" autocomplete="new-password" minlength="8" style="width:150px;padding:4px 8px">
+                <button class="small" type="submit">재설정</button>
+              </form>
+            </details>
+            {{if ne .Name $me}}
+            <form method="post" action="{{$p}}/admin"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="name" value="{{.Name}}">
+              {{if .Disabled}}<button class="small" name="op" value="enable">활성화</button>{{else}}<button class="small" name="op" value="disable">비활성화</button>{{end}}
+            </form>
+            <form method="post" action="{{$p}}/admin"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="name" value="{{.Name}}">
+              {{if .Admin}}<button class="small" name="op" value="unadmin">관리자 해제</button>{{else}}<button class="small" name="op" value="admin">관리자 지정</button>{{end}}
+            </form>
+            <form method="post" action="{{$p}}/admin" onsubmit="return confirm('{{.Name}} 사용자를 삭제할까요?')"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="name" value="{{.Name}}">
+              <button class="small danger" name="op" value="delete">삭제</button>
+            </form>
+            {{end}}
+          </div>
+        </td>
+      </tr>
+      {{end}}
+      </tbody>
+    </table>
+    </div>
+    <p class="hint">비밀번호 재설정·비활성화 시 해당 사용자의 기존 로그인은 즉시 해제됩니다.</p>
+  </div>
+</div>
+{{template "foot" .}}

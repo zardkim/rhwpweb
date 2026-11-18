@@ -1,0 +1,5 @@
+# 이 폴더는 pkg 컨텍스트로만 쓰인다 (nginx 설정만 COPY). 인증 파일은 절대 들어가지 않게.
+auth/
+.htpasswd
+.git/
+*.md

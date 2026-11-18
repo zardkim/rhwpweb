@@ -1,0 +1,12 @@
+# 빌드 컨텍스트(RHWP 소스)용 ignore. BuildKit 은 <Dockerfile>.dockerignore 를
+# 소스 쪽 .dockerignore 보다 우선한다 — 업스트림 .dockerignore 는 samples/·tools/ 를
+# 빼는데, 둘 다 cargo workspace / include_bytes! 가 참조하므로 여기서는 쓰지 않는다.
+.git
+target
+pkg
+output
+pdf
+mydocs
+!mydocs/manual
+**/node_modules
+rhwp-studio/dist

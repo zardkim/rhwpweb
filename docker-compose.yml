@@ -1,0 +1,66 @@
+# RHWP Studio 배포용 Compose
+#
+# 폴더 구성 (이 파일이 있는 폴더 = 설치 폴더):
+#   docker-compose.yml
+#   .env          ← .env.example 을 복사해 수정 (PUID/PGID, 첫 관리자 등)
+#   db/           ← 사용자 DB (users.db, secret.key) — 자동 생성
+#   files/        ← 서버 저장 문서. files/<사용자>/<문서>.hwp — 자동 생성
+#
+# 접속:        http://<호스트>:${RHWP_PORT:-17780}/rhwp/
+# 사용자 관리: http://<호스트>:${RHWP_PORT:-17780}/rhwp-auth/admin
+#
+# ⚠ Portainer 스택으로 올릴 때는 상대 경로(./db, ./files)가 Portainer 내부 폴더로 잡힌다.
+#   .env(스택 환경변수)의 RHWP_DB_DIR / RHWP_FILES_DIR 를 절대 경로로 지정할 것.
+#   예) RHWP_DB_DIR=/volume1/docker/rhwp/db  RHWP_FILES_DIR=/volume1/docker/rhwp/files
+services:
+  rhwp:
+    image: zardkim/rhwpweb:${RHWP_TAG:-latest}
+    container_name: rhwp
+    restart: unless-stopped
+    ports:
+      - "${RHWP_PORT:-17780}:80"
+    environment:
+      RHWP_AUTH: request                       # 로그인 화면 + 사용자 관리 (rhwp-auth)
+      RHWP_AUTH_UPSTREAM: http://rhwp-auth:8080
+      RHWP_UPLOAD_MAX_MB: ${RHWP_FILES_MAX_MB:-100}   # 서버 저장 최대 크기
+    depends_on:
+      - rhwp-auth
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+      - /etc/nginx/rhwp-auth.d
+    security_opt:
+      - no-new-privileges:true
+
+  rhwp-auth:
+    image: zardkim/rhwpweb-auth:${RHWP_AUTH_TAG:-latest}
+    container_name: rhwp-auth
+    restart: unless-stopped
+    # 포트를 외부에 열지 않는다. rhwp(nginx) 가 /rhwp-auth/ 로 중계한다.
+    environment:
+      # root 로 시작해 db/·files/ 소유자를 이 사용자로 맞춘 뒤 이 사용자로 실행한다.
+      # NAS 에서 파일을 직접 보고 고칠 사용자의 uid/gid (SSH: id <사용자> → 보통 1026:100)
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      RHWP_AUTH_TITLE: ${RHWP_AUTH_TITLE:-RHWP}
+      RHWP_AUTH_SESSION_HOURS: ${RHWP_AUTH_SESSION_HOURS:-168}   # 로그인 유지 시간 (7일)
+      RHWP_AUTH_COOKIE_SECURE: ${RHWP_AUTH_COOKIE_SECURE:-auto}   # auto | true(HTTPS 전용) | false
+      RHWP_AUTH_ADMIN_USER: ${RHWP_AUTH_ADMIN_USER:-admin}        # 첫 실행 시에만 사용
+      RHWP_AUTH_ADMIN_PASSWORD: ${RHWP_AUTH_ADMIN_PASSWORD:-}     # 비우면 자동 생성 → 로그 확인
+      RHWP_AUTH_FILES_MAX_MB: ${RHWP_FILES_MAX_MB:-100}
+    volumes:
+      - ${RHWP_DB_DIR:-./db}:/data          # users.db, secret.key — 백업 대상
+      - ${RHWP_FILES_DIR:-./files}:/files   # 서버 저장 문서 (사용자별 폴더) — 백업 대상
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:            # 시작할 때 소유자를 맞추고 PUID 로 내려가는 데만 쓴다 (내려간 뒤에는 모두 사라짐)
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+      - FOWNER
+    security_opt:
+      - no-new-privileges:true

@@ -1,0 +1,63 @@
+{{template "head" .}}
+<noscript><meta http-equiv="refresh" content="0;url={{.RD}}"></noscript>
+<div class="wrap narrow">
+  <div class="card">
+    <h1>로그인되었습니다</h1>
+    <p class="sub">문서 편집기로 이동하는 중… <a href="{{.RD}}">바로 가기</a></p>
+  </div>
+</div>
+<script>
+// 같은 브라우저를 여러 사람이 쓸 때, 앞 사람의 흔적이 다음 사람에게 보이지 않게 한다.
+// 마지막으로 로그인한 사용자와 다르면 이 브라우저에 남은 아래 항목을 비운다.
+//   - 자동 저장 복구본 (IndexedDB rhwpStudioAutosave/drafts) — 저장 안 한 문서 내용
+//   - 최근 문서 목록  (IndexedDB rhwpStudioRecent/recent)   — 로컬 파일 이름·접근 핸들
+//   - 서버 문서 연결 정보 (localStorage rhwp.cloud.*)
+// DB 를 지우지(deleteDatabase) 않고 저장소만 비운다: 다른 탭이 DB 를 열고 있으면 삭제가
+// 막혀 편집기 시작이 멈출 수 있어서다. 없는 DB 는 만들지 않는다.
+(function () {
+  var user = {{.Name}};
+  var rd = {{.RD}};
+  var done = false;
+  function go() { if (done) return; done = true; location.replace(rd); }
+  setTimeout(go, 3000); // 무슨 일이 있어도 3초 안에는 이동
+
+  function clearStore(dbName, store) {
+    return new Promise(function (resolve) {
+      var req;
+      try { req = indexedDB.open(dbName); } catch (e) { return resolve(); }
+      req.onupgradeneeded = function () { req.transaction.abort(); }; // 없던 DB → 만들지 않음
+      req.onerror = function () { resolve(); };
+      req.onblocked = function () { resolve(); };
+      req.onsuccess = function () {
+        var db = req.result;
+        try {
+          if (!db.objectStoreNames.contains(store)) { db.close(); return resolve(); }
+          var tx = db.transaction(store, 'readwrite');
+          tx.objectStore(store).clear();
+          tx.oncomplete = tx.onerror = tx.onabort = function () { db.close(); resolve(); };
+        } catch (e) { db.close(); resolve(); }
+      };
+    });
+  }
+
+  var prev = null;
+  try { prev = localStorage.getItem('rhwp.user'); } catch (e) { /* ignore */ }
+  if (prev === user) return go();
+  var jobs = [];
+  if (window.indexedDB) {
+    jobs.push(clearStore('rhwpStudioAutosave', 'drafts'));
+    jobs.push(clearStore('rhwpStudioRecent', 'recent'));
+  }
+  try {
+    for (var i = localStorage.length - 1; i >= 0; i--) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf('rhwp.cloud.') === 0) localStorage.removeItem(k);
+    }
+  } catch (e) { /* ignore */ }
+  Promise.all(jobs).then(function () {
+    try { localStorage.setItem('rhwp.user', user); } catch (e) { /* ignore */ }
+    go();
+  });
+})();
+</script>
+{{template "foot" .}}

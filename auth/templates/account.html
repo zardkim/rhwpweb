@@ -1,0 +1,23 @@
+{{template "head" .}}
+<div class="wrap" style="max-width:560px">
+  {{template "nav" .}}
+  <div class="card">
+    <h1>내 계정</h1>
+    <p class="sub">{{.User.Name}} · 가입 {{fmtDate .User.Created}} · 최근 로그인 {{fmtTime .User.LastLogin}}</p>
+    {{template "flash" .}}
+    <h2 style="margin-top:0">비밀번호 변경</h2>
+    <form method="post" action="{{.Prefix}}/password">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <input type="text" name="username" value="{{.User.Name}}" autocomplete="username" hidden>
+      <label for="c">현재 비밀번호</label>
+      <input id="c" type="password" name="current" autocomplete="current-password" required>
+      <label for="n1">새 비밀번호 (8자 이상)</label>
+      <input id="n1" type="password" name="new1" autocomplete="new-password" minlength="8" required>
+      <label for="n2">새 비밀번호 확인</label>
+      <input id="n2" type="password" name="new2" autocomplete="new-password" minlength="8" required>
+      <button class="primary full" type="submit">변경</button>
+    </form>
+    <p class="hint">변경하면 다른 기기의 로그인은 모두 해제됩니다.</p>
+  </div>
+</div>
+{{template "foot" .}}

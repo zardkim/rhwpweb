@@ -1,0 +1,10 @@
+# 인증 파일은 절대 커밋하지 않는다
+.htpasswd
+*.htpasswd
+.env
+
+# 배포 데이터 (compose 폴더의 db/, files/) — 저장소에 넣지 않는다
+/db/
+/files/
+/docker-compose.override.yml
+/RHWP_Docker_Image_Packaging_Plan.md
