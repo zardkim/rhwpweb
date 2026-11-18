@@ -20,6 +20,14 @@ NAS·서버에 Docker 로 바로 설치할 수 있게 묶은 것입니다.**
 - **공유 폴더** — NAS 의 다른 폴더(부서 공용 문서, 양식 모음 등)를 붙여 모든 사용자가 함께 쓴다.
 - **계정 메뉴** — 편집기 메뉴바 오른쪽 👤 버튼에서 내 계정·비밀번호 변경, 사용자 관리(관리자), 로그아웃.
 
+## 화면
+
+| 로그인 | [파일] 메뉴 — 서버 열기·저장, 계정 |
+|---|---|
+| <img src="docs/images/login.png" alt="로그인 화면" width="400"> | <img src="docs/images/file-menu.png" alt="파일 메뉴의 서버 저장·계정 항목" width="400"> |
+| **👤 계정 메뉴** (메뉴바 오른쪽) | **관리자 화면** — 저장 위치 점검·사용자 관리 |
+| <img src="docs/images/account-menu.png" alt="계정 메뉴" width="400"> | <img src="docs/images/admin.png" alt="관리자 화면" width="400"> |
+
 | 이미지 (Docker Hub) | 역할 |
 |---|---|
 | [`zardkim/rhwpweb`](https://hub.docker.com/r/zardkim/rhwpweb) | 편집기 화면 (Nginx + RHWP Studio) |
